@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Наш Мессенджер</title>
+    <style>
+        /* Базовый дизайн в стиле iOS/Android */
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Стиль облачков сообщений */
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
+        .mine { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 4px; }
+        .theirs { align-self: flex-start; background: #e9e9eb; color: black; border-bottom-left-radius: 4px; }
+        
+        /* Поле ввода */
+        #input-area { background: white; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
+        input { flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; outline: none; font-size: 16px; }
+        button { background: #007aff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div id="messages"></div>
+    <form id="input-area" onsubmit="sendMessage(event)">
+        <input type="text" id="messageText" placeholder="Сообщение..." autocomplete="off">
+        <button type="submit">↑</button>
+    </form>
+
+    <script>
+        // Подключаемся к "мозгу" (серверу)
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+
+        ws.onmessage = function(event) {
+            const messages = document.getElementById('messages');
+            const message = document.createElement('div');
+            // Если пришло сообщение — рисуем его как "чужое"
+            message.className = 'message theirs'; 
+            message.textContent = event.data;
+            messages.appendChild(message);
+            messages.scrollTop = messages.scrollHeight;
+        };
+
+        function sendMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById("messageText");
+            if (input.value.trim() !== "") {
+                ws.send(input.value); // Отправляем на сервер
+                
+                // Рисуем свое сообщение на экране
+                const messages = document.getElementById('messages');
+                const message = document.createElement('div');
+                message.className = 'message mine';
+                message.textContent = input.value;
+                messages.appendChild(message);
+                
+                input.value = ''; // Очищаем поле
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
