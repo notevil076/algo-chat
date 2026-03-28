@@ -3,25 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Наш Мессенджер</title>
+    <title>Algo</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5968/5968756.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968756.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+
     <style>
-        /* Базовый дизайн в стиле iOS/Android */
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #121212; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        header { background: #1f1f1f; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; border-bottom: 1px solid #333; color: #007aff; }
         
         #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         
-        /* Стиль облачков сообщений */
-        .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; font-size: 16px; line-height: 1.4; word-wrap: break-word; position: relative; }
         .mine { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 4px; }
-        .theirs { align-self: flex-start; background: #e9e9eb; color: black; border-bottom-left-radius: 4px; }
+        .theirs { align-self: flex-start; background: #2c2c2e; color: white; border-bottom-left-radius: 4px; }
         
-        /* Поле ввода */
-        #input-area { background: white; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
-        input { flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; outline: none; font-size: 16px; }
+        .sender { font-size: 10px; margin-bottom: 4px; opacity: 0.5; display: block; }
+
+        #input-area { background: #1f1f1f; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
+        input { flex: 1; border: none; background: #2c2c2e; color: white; border-radius: 20px; padding: 10px 15px; outline: none; font-size: 16px; }
         button { background: #007aff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 20px; }
     </style>
 </head>
 <body>
+    <header>Algo</header>
     <div id="messages"></div>
     <form id="input-area" onsubmit="sendMessage(event)">
         <input type="text" id="messageText" placeholder="Сообщение..." autocomplete="off">
@@ -29,35 +41,43 @@
     </form>
 
     <script>
-        // Подключаемся к "мозгу" (серверу)
+        // Запоминаем кто зашел
+        let user = localStorage.getItem('algo_user');
+        if (!user) {
+            user = prompt("Введите ваше имя (notEvil или Оля):");
+            localStorage.setItem('algo_user', user);
+        }
+
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
 
         ws.onmessage = function(event) {
-            const messages = document.getElementById('messages');
-            const message = document.createElement('div');
-            // Если пришло сообщение — рисуем его как "чужое"
-            message.className = 'message theirs'; 
-            message.textContent = event.data;
-            messages.appendChild(message);
-            messages.scrollTop = messages.scrollHeight;
+            const data = JSON.parse(event.data);
+            // Если отправитель не я - рисуем сообщение
+            if (data.sender !== user) {
+                renderMsg(data.text, 'theirs', data.sender);
+            }
         };
+
+        function renderMsg(text, type, sender = '') {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            const nameTag = sender ? `<span class="sender">${sender}</span>` : '';
+            div.innerHTML = `${nameTag}${text}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
 
         function sendMessage(event) {
             event.preventDefault();
             const input = document.getElementById("messageText");
             if (input.value.trim() !== "") {
-                ws.send(input.value); // Отправляем на сервер
+                const messageData = { sender: user, text: input.value };
+                ws.send(JSON.stringify(messageData));
                 
-                // Рисуем свое сообщение на экране
-                const messages = document.getElementById('messages');
-                const message = document.createElement('div');
-                message.className = 'message mine';
-                message.textContent = input.value;
-                messages.appendChild(message);
-                
-                input.value = ''; // Очищаем поле
-                messages.scrollTop = messages.scrollHeight;
+                renderMsg(input.value, 'mine');
+                input.value = '';
             }
         }
     </script>

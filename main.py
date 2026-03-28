@@ -1,10 +1,9 @@
 import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 
 app = FastAPI()
 
-# Класс для управления подключениями (чтобы ты и девушка видели сообщения друг друга)
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -22,20 +21,23 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Главная страница — отдаем наш index.html
+# Отдаем манифест с правильным типом данных
+@app.get("/manifest.json")
+async def get_manifest():
+    return FileResponse("manifest.json", media_type="application/json")
+
+# Главная страница
 @app.get("/")
-async def get():
+async def get_index():
     with open("index.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Канал для мгновенных сообщений
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            # Рассылаем текст всем подключенным
             await manager.broadcast(data)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
