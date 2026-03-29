@@ -24,7 +24,7 @@ class DBUser(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
-    hashed_password = Column(String) # Здесь временно будет лежать обычный текст
+    hashed_password = Column(String)
     is_admin = Column(Integer, default=0)
 
 class DBMessage(Base):
@@ -41,6 +41,24 @@ class UserAuth(BaseModel):
     password: str
 
 app = FastAPI()
+
+# --- МЕНЕДЖЕР ПОДКЛЮЧЕНИЙ ---
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+manager = ConnectionManager()
 
 @app.post("/register")
 async def register(user: UserAuth):
@@ -60,10 +78,17 @@ async def login(user: UserAuth):
     db = SessionLocal()
     try:
         db_user = db.query(DBUser).filter(DBUser.username == user.username).first()
-        # ВРЕМЕННО: Сверяем пароли как обычный текст
         if not db_user or db_user.hashed_password != user.password:
             return JSONResponse(status_code=400, content={"detail": "Wrong pass"})
         return {"status": "ok"}
+    finally: db.close()
+
+@app.get("/users")
+async def get_users():
+    db = SessionLocal()
+    try:
+        users = db.query(DBUser).all()
+        return [{"username": u.username} for u in users]
     finally: db.close()
 
 @app.get("/history")
@@ -77,16 +102,22 @@ async def get_history():
 @app.get("/")
 async def get_index(): return FileResponse("index.html")
 
+@app.get("/manifest.json")
+async def get_manifest(): return FileResponse("manifest.json")
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
+    await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data)
+            msg_json = json.loads(data)
             db = SessionLocal()
-            db.add(DBMessage(sender=msg['sender'], text=msg['text']))
+            db.add(DBMessage(sender=msg_json['sender'], text=msg_json['text']))
             db.commit()
             db.close()
-            await websocket.send_text(data)
-    except: pass
+            await manager.broadcast(data)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except:
+        pass

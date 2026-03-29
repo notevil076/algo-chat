@@ -2,46 +2,75 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Algo | notevil-net</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0d0d0d; --surface: #1a1a1a; --accent: #00ff41; --text: #e0e0e0; --mine: #004d1a; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #auth-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        :root { --bg: #0d0d0d; --surface: #161616; --accent: #00ff41; --text: #e0e0e0; --mine: #004d1a; --sidebar: #0a0a0a; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .auth-card { background: var(--surface); padding: 30px; border-radius: 12px; border: 1px solid #333; width: 300px; text-align: center; }
-        input { width: 100%; background: #262626; border: 1px solid #333; padding: 12px; margin-bottom: 15px; border-radius: 8px; color: white; box-sizing: border-box; outline: none; }
-        input:focus { border-color: var(--accent); }
-        button { width: 100%; background: var(--accent); color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
+        
+        input { width: 100%; background: #222; border: 1px solid #333; padding: 12px; margin-bottom: 15px; border-radius: 8px; color: white; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+        
+        button { width: 100%; background: var(--accent); color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .btn-sec { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
-        header { background: var(--surface); padding: 15px; text-align: center; color: var(--accent); border-bottom: 1px solid #333; font-weight: 600; }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Боковая панель как в ТГ */
+        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; font-weight: 600; color: var(--accent); border-bottom: 1px solid #222; }
+        #user-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .user-item { padding: 12px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .user-item:hover { background: #1a1a1a; }
+        .user-avatar { width: 35px; height: 35px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--accent); border: 1px solid var(--accent); }
+
+        /* Область чата */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
+        header { background: var(--surface); padding: 15px 20px; color: var(--accent); border-bottom: 1px solid #222; font-weight: 600; display: flex; justify-content: space-between; }
+        
         #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 10px; border-radius: 10px; font-size: 14px; position: relative; }
-        .mine { align-self: flex-end; background: var(--mine); border-bottom-right-radius: 2px; }
-        .theirs { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 2px; }
-        .sender { font-size: 10px; color: var(--accent); display: block; margin-bottom: 4px; opacity: 0.8; }
-        form { background: var(--surface); padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+        .mine { align-self: flex-end; background: var(--mine); border-bottom-right-radius: 2px; border: 1px solid rgba(0, 255, 65, 0.3); }
+        .theirs { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 2px; border: 1px solid #333; }
+        .sender { font-size: 10px; color: var(--accent); font-weight: 600; margin-bottom: 4px; display: block; }
+        
+        form { background: var(--surface); padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid #222; }
+        #m { flex: 1; background: #0d0d0d; border: 1px solid #333; padding: 12px; border-radius: 25px; color: white; outline: none; }
+        
+        @media (max-width: 600px) { .sidebar { display: none; } }
     </style>
 </head>
 <body>
     <div id="auth-screen">
         <div class="auth-card">
-            <h1 style="color:var(--accent); letter-spacing: 3px;">ALGO</h1>
-            <input type="text" id="u" placeholder="Логин">
-            <input type="password" id="p" placeholder="Пароль">
-            <button onclick="auth('login')">ВХОД</button>
-            <button class="btn-sec" onclick="auth('register')">РЕГИСТРАЦИЯ</button>
+            <h1 style="color:var(--accent); letter-spacing: 4px; margin-bottom: 25px;">ALGO_CORE</h1>
+            <input type="text" id="u" placeholder="Username">
+            <input type="password" id="p" placeholder="Password">
+            <button onclick="auth('login')">LOGIN</button>
+            <button class="btn-sec" onclick="auth('register')">SIGN UP</button>
         </div>
     </div>
 
-    <div id="chat" style="display:none; flex-direction: column; height: 100vh;">
-        <header>notevil-net // algo_core</header>
-        <div id="messages"></div>
-        <form onsubmit="send(event)">
-            <input type="text" id="m" style="flex:1" placeholder="Сообщение..." autocomplete="off">
-            <button type="submit" style="width:60px">↑</button>
-        </form>
+    <div class="main-container" id="chat" style="display:none;">
+        <div class="sidebar">
+            <div class="sidebar-header">NET_CONTACTS</div>
+            <div id="user-list"></div>
+        </div>
+        <div class="chat-area">
+            <header>
+                <span>notEvil // algorithm</span>
+                <span id="status" style="font-size: 10px; color: #555;">CONNECTED</span>
+            </header>
+            <div id="messages"></div>
+            <form onsubmit="send(event)">
+                <input type="text" id="m" placeholder="Write a message..." autocomplete="off">
+                <button type="submit" style="width:50px; border-radius: 50%;">↑</button>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -50,51 +79,55 @@
         if (user) {
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('chat').style.display = 'flex';
-            initChat();
+            init();
         }
         
         async function auth(type) {
             const username = document.getElementById('u').value.trim();
             const password = document.getElementById('p').value.trim();
-            if(!username || !password) return alert("Введите данные");
+            if(!username || !password) return alert("Empty fields");
 
-            try {
-                const res = await fetch('/' + type, { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({username, password}) 
-                });
-                
-                const contentType = res.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    const data = await res.json();
-                    if (res.ok) {
-                        localStorage.setItem('algo_user', username);
-                        location.reload();
-                    } else {
-                        alert(data.detail || "Ошибка входа");
-                    }
-                } else {
-                    alert("Сервер перегружен или недоступен (502)");
-                }
-            } catch (e) { alert("Ошибка соединения с сервером"); }
+            const res = await fetch('/' + type, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({username, password}) 
+            });
+            
+            if (res.ok) {
+                localStorage.setItem('algo_user', username);
+                location.reload();
+            } else {
+                const data = await res.json();
+                alert(data.detail || "Error");
+            }
         }
 
-        async function initChat() {
-            try {
-                const res = await fetch('/history');
-                const history = await res.json();
-                if (Array.isArray(history)) {
-                    history.forEach(msg => render(msg.text, msg.sender === user ? 'mine' : 'theirs', msg.sender));
-                }
-                
-                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                ws = new WebSocket(protocol + '//' + location.host + '/ws');
-                ws.onmessage = (e) => {
-                    const d = JSON.parse(e.data);
-                    if (d.sender !== user) render(d.text, 'theirs', d.sender);
-                };
-            } catch (e) { console.log("Chat init error"); }
+        async function init() {
+            // Загрузка пользователей
+            const uRes = await fetch('/users');
+            const users = await uRes.json();
+            const uList = document.getElementById('user-list');
+            users.forEach(u => {
+                uList.innerHTML += `
+                    <div class="user-item">
+                        <div class="user-avatar">${u.username[0].toUpperCase()}</div>
+                        <span>${u.username}</span>
+                    </div>`;
+            });
+
+            // История сообщений
+            const hRes = await fetch('/history');
+            const history = await hRes.json();
+            history.forEach(msg => render(msg.text, msg.sender === user ? 'mine' : 'theirs', msg.sender));
+            
+            // WebSocket
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(protocol + '//' + location.host + '/ws');
+            ws.onmessage = (e) => {
+                const d = JSON.parse(e.data);
+                if (d.sender !== user) render(d.text, 'theirs', d.sender);
+            };
+            ws.onclose = () => document.getElementById('status').innerText = 'OFFLINE';
         }
 
         function render(txt, cls, snd) {
