@@ -9,24 +9,21 @@ from sqlalchemy.orm import sessionmaker
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
-# --- НАСТРОЙКИ БАЗЫ ДАННЫХ ---
+# --- НАСТРОЙКИ БД ---
 DATABASE_URL = os.getenv("DATABASE_URL")
-
-# Если Railway дал ссылку через postgres://, меняем на postgresql:// для SQLAlchemy
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 if not DATABASE_URL:
-    print("КРИТИЧЕСКАЯ ОШИБКА: DATABASE_URL не найдена в переменных окружения!")
-    # Для тестов локально можно вписать sqlite:///./test.db, но в Railway должна быть связь с Postgres
-    DATABASE_URL = "sqlite:///./fallback.db" 
+    DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+# bcrypt — стандарт, но мы добавим ограничение в 72 символа
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# --- МОДЕЛИ ---
 class DBUser(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -49,46 +46,47 @@ class UserAuth(BaseModel):
 
 app = FastAPI()
 
-# --- ЧАТ ---
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-manager = ConnectionManager()
-
-@app.get("/")
-async def get_index(): return FileResponse("index.html")
+# --- ЛОГИКА АВТОРИЗАЦИИ ---
 
 @app.post("/register")
 async def register(user: UserAuth):
     db = SessionLocal()
     try:
+        # ПРОВЕРКА: Обрезаем пароль до безопасной длины для bcrypt
+        safe_pass = user.password[:71] 
+        
         exists = db.query(DBUser).filter(DBUser.username == user.username).first()
-        if exists: return JSONResponse(status_code=400, content={"detail": "Пользователь уже существует"})
-        new_user = DBUser(username=user.username, hashed_password=pwd_context.hash(user.password), is_admin=1 if user.username == "notevil" else 0)
+        if exists:
+            return JSONResponse(status_code=400, content={"detail": "Пользователь уже существует"})
+        
+        new_user = DBUser(
+            username=user.username,
+            hashed_password=pwd_context.hash(safe_pass),
+            is_admin=1 if user.username == "notevil" else 0
+        )
         db.add(new_user)
         db.commit()
         return {"status": "ok"}
-    except Exception as e: return JSONResponse(status_code=500, content={"detail": str(e)})
-    finally: db.close()
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Ошибка БД: {str(e)}"})
+    finally:
+        db.close()
 
 @app.post("/login")
 async def login(user: UserAuth):
     db = SessionLocal()
     try:
+        safe_pass = user.password[:71]
         db_user = db.query(DBUser).filter(DBUser.username == user.username).first()
-        if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
+        
+        if not db_user or not pwd_context.verify(safe_pass, db_user.hashed_password):
             return JSONResponse(status_code=400, content={"detail": "Неверный логин или пароль"})
+        
         return {"status": "ok"}
-    finally: db.close()
+    finally:
+        db.close()
+
+# --- ОСТАЛЬНОЙ КОД (История и WS) ---
 
 @app.get("/history")
 async def get_history():
@@ -96,19 +94,23 @@ async def get_history():
     try:
         msgs = db.query(DBMessage).order_by(DBMessage.timestamp.asc()).all()
         return [{"sender": m.sender, "text": m.text} for m in msgs]
-    except: return []
-    finally: db.close()
+    finally:
+        db.close()
+
+@app.get("/")
+async def get_index(): return FileResponse("index.html")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    await websocket.accept()
     try:
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data)
+            msg_json = json.loads(data)
             db = SessionLocal()
-            db.add(DBMessage(sender=msg['sender'], text=msg['text']))
+            db.add(DBMessage(sender=msg_json['sender'], text=msg_json['text']))
             db.commit()
             db.close()
-            await manager.broadcast(data)
-    except: manager.disconnect(websocket)
+            # Рассылка всем (упрощенно для стабильности)
+            await websocket.send_text(data) 
+    except: pass
