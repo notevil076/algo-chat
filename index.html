@@ -2,138 +2,144 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algo | notevil-net</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #0d0d0d; --surface: #161616; --accent: #00ff41; --text: #e0e0e0; --mine: #004d1a; --sidebar: #0a0a0a; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; overflow: hidden; }
         
         #auth-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .auth-card { background: var(--surface); padding: 30px; border-radius: 12px; border: 1px solid #333; width: 300px; text-align: center; }
-        
-        input { width: 100%; background: #222; border: 1px solid #333; padding: 12px; margin-bottom: 15px; border-radius: 8px; color: white; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
-        
+        input { width: 100%; background: #222; border: 1px solid #333; padding: 12px; margin-bottom: 15px; border-radius: 8px; color: white; box-sizing: border-box; outline: none; }
         button { width: 100%; background: var(--accent); color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        .btn-sec { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
 
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        
-        /* Боковая панель как в ТГ */
-        .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid #222; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; font-weight: 600; color: var(--accent); border-bottom: 1px solid #222; }
-        #user-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .user-item { padding: 12px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
-        .user-item:hover { background: #1a1a1a; }
-        .user-avatar { width: 35px; height: 35px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--accent); border: 1px solid var(--accent); }
+        .sidebar { width: 300px; background: var(--sidebar); border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .search-box { padding: 15px; border-bottom: 1px solid #222; }
+        .search-box input { margin: 0; font-size: 13px; border-radius: 20px; padding: 8px 15px; }
+        #chat-list { flex: 1; overflow-y: auto; }
+        .chat-item { padding: 15px; border-bottom: 1px solid #111; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .chat-item:hover, .chat-item.active { background: #1a1a1a; }
+        .chat-item.active { border-left: 3px solid var(--accent); }
 
-        /* Область чата */
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
-        header { background: var(--surface); padding: 15px 20px; color: var(--accent); border-bottom: 1px solid #222; font-weight: 600; display: flex; justify-content: space-between; }
-        
+        .chat-area { flex: 1; display: flex; flex-direction: column; }
+        header { background: var(--surface); padding: 15px 20px; border-bottom: 1px solid #222; font-weight: 600; color: var(--accent); }
         #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
-        .mine { align-self: flex-end; background: var(--mine); border-bottom-right-radius: 2px; border: 1px solid rgba(0, 255, 65, 0.3); }
+        
+        .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; }
+        .mine { align-self: flex-end; background: var(--mine); border-bottom-right-radius: 2px; }
         .theirs { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 2px; border: 1px solid #333; }
-        .sender { font-size: 10px; color: var(--accent); font-weight: 600; margin-bottom: 4px; display: block; }
         
-        form { background: var(--surface); padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid #222; }
-        #m { flex: 1; background: #0d0d0d; border: 1px solid #333; padding: 12px; border-radius: 25px; color: white; outline: none; }
-        
-        @media (max-width: 600px) { .sidebar { display: none; } }
+        form { background: var(--surface); padding: 15px; display: flex; gap: 10px; border-top: 1px solid #222; }
+        #m { flex: 1; background: #0d0d0d; border: 1px solid #333; border-radius: 20px; padding: 10px 20px; color: white; outline: none; }
     </style>
 </head>
 <body>
     <div id="auth-screen">
         <div class="auth-card">
-            <h1 style="color:var(--accent); letter-spacing: 4px; margin-bottom: 25px;">ALGO_CORE</h1>
-            <input type="text" id="u" placeholder="Username">
-            <input type="password" id="p" placeholder="Password">
-            <button onclick="auth('login')">LOGIN</button>
-            <button class="btn-sec" onclick="auth('register')">SIGN UP</button>
+            <h1 style="color:var(--accent); letter-spacing: 3px;">ALGO_DM</h1>
+            <input type="text" id="u" placeholder="Логин">
+            <input type="password" id="p" placeholder="Пароль">
+            <button onclick="auth('login')">ВХОД</button>
+            <button onclick="auth('register')" style="background:none; color:var(--accent); border:1px solid var(--accent); margin-top:10px;">РЕГИСТРАЦИЯ</button>
         </div>
     </div>
 
-    <div class="main-container" id="chat" style="display:none;">
-        <div class="sidebar">
-            <div class="sidebar-header">NET_CONTACTS</div>
-            <div id="user-list"></div>
-        </div>
-        <div class="chat-area">
-            <header>
-                <span>notEvil // algorithm</span>
-                <span id="status" style="font-size: 10px; color: #555;">CONNECTED</span>
-            </header>
-            <div id="messages"></div>
-            <form onsubmit="send(event)">
-                <input type="text" id="m" placeholder="Write a message..." autocomplete="off">
-                <button type="submit" style="width:50px; border-radius: 50%;">↑</button>
-            </form>
-        </div>
+    <div class="sidebar">
+        <div class="search-box"><input type="text" id="search" placeholder="Поиск //user + Enter" onkeyup="handleSearch(event)"></div>
+        <div id="chat-list"></div>
+    </div>
+
+    <div class="chat-area">
+        <header id="chat-header">Выберите диалог</header>
+        <div id="messages"></div>
+        <form id="msg-form" onsubmit="send(event)" style="display:none;">
+            <input type="text" id="m" placeholder="Сообщение..." autocomplete="off">
+            <button type="submit" style="width:50px; border-radius: 50%;">↑</button>
+        </form>
     </div>
 
     <script>
-        let user = localStorage.getItem('algo_user'), ws;
-        
-        if (user) {
+        let me = localStorage.getItem('algo_user'), ws, currentRecipient = null;
+        let activeChats = JSON.parse(localStorage.getItem('chats_' + me) || "[]");
+
+        if (me) {
             document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('chat').style.display = 'flex';
-            init();
+            if (Notification.permission !== 'granted') Notification.requestPermission();
+            renderChatList();
+            initWS();
         }
-        
+
         async function auth(type) {
             const username = document.getElementById('u').value.trim();
             const password = document.getElementById('p').value.trim();
-            if(!username || !password) return alert("Empty fields");
+            const res = await fetch('/' + type, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) });
+            if (res.ok) { localStorage.setItem('algo_user', username); location.reload(); }
+            else alert("Ошибка");
+        }
 
-            const res = await fetch('/' + type, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({username, password}) 
-            });
-            
-            if (res.ok) {
-                localStorage.setItem('algo_user', username);
-                location.reload();
-            } else {
+        function initWS() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/ws/${me}`);
+            ws.onmessage = (e) => {
+                const d = JSON.parse(e.data);
+                // Если чата нет в списке — добавляем
+                if (!activeChats.includes(d.sender)) {
+                    activeChats.push(d.sender);
+                    saveChats();
+                    renderChatList();
+                }
+                // Если чат открыт — рисуем сообщение, если нет — шлем уведомление
+                if (currentRecipient === d.sender) {
+                    render(d.text, 'theirs');
+                } else {
+                    new Notification(`Новое от //${d.sender}`, { body: d.text, icon: 'https://img.icons8.com/isometric/512/00ff41/skull.png' });
+                }
+            };
+        }
+
+        async function handleSearch(e) {
+            if (e.key === 'Enter') {
+                const target = e.target.value.replace('//', '');
+                const res = await fetch(`/search_user?q=${target}`);
                 const data = await res.json();
-                alert(data.detail || "Error");
+                if (data.exists) {
+                    if (!activeChats.includes(target)) { activeChats.push(target); saveChats(); renderChatList(); }
+                    openChat(target);
+                    e.target.value = '';
+                } else alert("Пользователь не найден");
             }
         }
 
-        async function init() {
-            // Загрузка пользователей
-            const uRes = await fetch('/users');
-            const users = await uRes.json();
-            const uList = document.getElementById('user-list');
-            users.forEach(u => {
-                uList.innerHTML += `
-                    <div class="user-item">
-                        <div class="user-avatar">${u.username[0].toUpperCase()}</div>
-                        <span>${u.username}</span>
-                    </div>`;
-            });
+        function saveChats() { localStorage.setItem('chats_' + me, JSON.stringify(activeChats)); }
 
-            // История сообщений
-            const hRes = await fetch('/history');
-            const history = await hRes.json();
-            history.forEach(msg => render(msg.text, msg.sender === user ? 'mine' : 'theirs', msg.sender));
-            
-            // WebSocket
-            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(protocol + '//' + location.host + '/ws');
-            ws.onmessage = (e) => {
-                const d = JSON.parse(e.data);
-                if (d.sender !== user) render(d.text, 'theirs', d.sender);
-            };
-            ws.onclose = () => document.getElementById('status').innerText = 'OFFLINE';
+        function renderChatList() {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = '';
+            activeChats.forEach(chat => {
+                const div = document.createElement('div');
+                div.className = `chat-item ${currentRecipient === chat ? 'active' : ''}`;
+                div.innerHTML = `<div style="width:30px;height:30px;background:#333;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid var(--accent)">${chat[0].toUpperCase()}</div> ${chat}`;
+                div.onclick = () => openChat(chat);
+                list.appendChild(div);
+            });
         }
 
-        function render(txt, cls, snd) {
+        async function openChat(recipient) {
+            currentRecipient = recipient;
+            document.getElementById('chat-header').innerText = `//${recipient}`;
+            document.getElementById('msg-form').style.display = 'flex';
+            document.getElementById('messages').innerHTML = '';
+            renderChatList();
+            const res = await fetch(`/history?me=${me}&other=${recipient}`);
+            const history = await res.json();
+            history.forEach(m => render(m.text, m.sender === me ? 'mine' : 'theirs'));
+        }
+
+        function render(txt, cls) {
             const d = document.createElement('div');
             d.className = 'msg ' + cls;
-            d.innerHTML = `<span class="sender">${snd}</span>${txt}`;
+            d.innerText = txt;
             const box = document.getElementById('messages');
             box.appendChild(d);
             box.scrollTop = box.scrollHeight;
@@ -142,9 +148,10 @@
         function send(e) {
             e.preventDefault();
             const i = document.getElementById('m');
-            if (i.value.trim() && ws && ws.readyState === 1) {
-                ws.send(JSON.stringify({sender: user, text: i.value}));
-                render(i.value, 'mine', user);
+            if (i.value.trim() && ws && currentRecipient) {
+                const msg = {sender: me, recipient: currentRecipient, text: i.value};
+                ws.send(JSON.stringify(msg));
+                render(i.value, 'mine');
                 i.value = '';
             }
         }
