@@ -49,7 +49,10 @@ class ConnectionManager:
 
     async def send_personal_message(self, message: dict, recipient: str):
         if recipient in self.active_connections:
-            await self.active_connections[recipient].send_text(json.dumps(message))
+            try:
+                await self.active_connections[recipient].send_text(json.dumps(message))
+            except:
+                self.disconnect(recipient)
 
 manager = ConnectionManager()
 
@@ -58,7 +61,7 @@ async def register(user: UserAuth):
     db = SessionLocal()
     try:
         if db.query(DBUser).filter(DBUser.username == user.username).first():
-            return JSONResponse(status_code=400, content={"detail": "User exists"})
+            return JSONResponse(status_code=400, content={"detail": "Exists"})
         db.add(DBUser(username=user.username, hashed_password=user.password))
         db.commit()
         return {"status": "ok"}
@@ -69,7 +72,7 @@ async def login(user: UserAuth):
     db = SessionLocal()
     try:
         u = db.query(DBUser).filter(DBUser.username == user.username, DBUser.hashed_password == user.password).first()
-        return {"status": "ok"} if u else JSONResponse(status_code=400, content={"detail": "Wrong pass"})
+        return {"status": "ok"} if u else JSONResponse(status_code=400, content={"detail": "Error"})
     finally: db.close()
 
 @app.get("/search_user")
@@ -109,4 +112,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             db.commit()
             db.close()
             await manager.send_personal_message(msg_json, msg_json['recipient'])
-    except: manager.disconnect(username)
+    except WebSocketDisconnect:
+        manager.disconnect(username)
+    except:
+        pass

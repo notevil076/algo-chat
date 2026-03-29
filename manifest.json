@@ -3,6 +3,7 @@
   "short_name": "Algo",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0d0d0d",
   "theme_color": "#00ff41",
   "icons": [
