@@ -122,9 +122,11 @@
         let currentUser = localStorage.getItem('algo_user');
 
         async function handleAuth(type) {
-            const username = document.getElementById('userInp').value;
-            const password = document.getElementById('passInp').value;
+            const username = document.getElementById('userInp').value.trim();
+            const password = document.getElementById('passInp').value.trim();
             
+            if (!username || !password) return alert("Заполните все поля");
+
             const res = await fetch(`/${type}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -132,17 +134,16 @@
             });
 
             if (res.ok) {
+                // ПРАВКА ТУТ: Сохраняем и показываем чат БЕЗ перезагрузки
                 localStorage.setItem('algo_user', username);
-                location.reload();
+                currentUser = username; // Обновляем глобальную переменную
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('chat-content').style.display = 'flex';
+                initChat(); // Запускаем подключение
             } else {
-                alert(type === 'login' ? "Ошибка входа" : "Пользователь уже существует");
+                const data = await res.json();
+                alert(data.detail || "Ошибка");
             }
-        }
-
-        if (currentUser) {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('chat-content').style.display = 'flex';
-            initChat();
         }
 
         let ws;
