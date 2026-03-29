@@ -1,14 +1,15 @@
 import os
 import json
 from datetime import datetime
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends
-from fastapi.responses import HTMLResponse, FileResponse
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from passlib.context import CryptContext
+from pydantic import BaseModel
 
-# Настройки Базы Данных (Railway автоматически дает DATABASE_URL)
+# --- НАСТРОЙКИ БАЗЫ ДАННЫХ ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -17,17 +18,16 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Настройка безопасности (хэширование паролей)
+# Шифрование паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# --- МОДЕЛИ БАЗЫ ДАННЫХ ---
-
-class User(Base):
+# --- МОДЕЛИ ДАННЫХ ---
+class DBUser(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_admin = Column(Integer, default=0) # 1 для тебя, 0 для остальных
+    is_admin = Column(Integer, default=0)
 
 class DBMessage(Base):
     __tablename__ = "messages"
@@ -38,9 +38,14 @@ class DBMessage(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# Модель для приема данных от фронтенда
+class UserAuth(BaseModel):
+    username: str
+    password: str
+
 app = FastAPI()
 
-# Менеджер подключений
+# --- МЕНЕДЖЕР СОЕДИНЕНИЙ ---
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -68,46 +73,44 @@ async def get_index():
 async def get_manifest():
     return FileResponse("manifest.json")
 
-# Простая регистрация (логика Algo 2.0)
 @app.post("/register")
-async def register(data: dict):
+async def register(user: UserAuth):
     db = SessionLocal()
-    user = db.query(User).filter(User.username == data['username']).first()
-    if user:
+    try:
+        existing_user = db.query(DBUser).filter(DBUser.username == user.username).first()
+        if existing_user:
+            return JSONResponse(status_code=400, content={"detail": "Пользователь уже существует"})
+        
+        new_user = DBUser(
+            username=user.username, 
+            hashed_password=pwd_context.hash(user.password),
+            is_admin=1 if user.username == "notevil" else 0
+        )
+        db.add(new_user)
+        db.commit()
+        return {"status": "ok"}
+    finally:
         db.close()
-        raise HTTPException(status_code=400, detail="User exists")
-    
-    new_user = User(
-        username=data['username'], 
-        hashed_password=pwd_context.hash(data['password']),
-        is_admin=1 if data['username'] == "notevil" else 0 # Делаем тебя админом автоматически
-    )
-    db.add(new_user)
-    db.commit()
-    db.close()
-    return {"status": "ok"}
 
 @app.post("/login")
-async def login(data: dict):
+async def login(user: UserAuth):
     db = SessionLocal()
-    user = db.query(User).filter(User.username == data['username']).first()
-    if not user or not pwd_context.verify(data['password'], user.hashed_password):
+    try:
+        db_user = db.query(DBUser).filter(DBUser.username == user.username).first()
+        if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
+            return JSONResponse(status_code=400, content={"detail": "Неверный логин или пароль"})
+        return {"status": "ok"}
+    finally:
         db.close()
-        raise HTTPException(status_code=400, detail="Wrong login/pass")
-    db.close()
-    return {"status": "ok"}
 
-# Получение истории сообщений
 @app.get("/history")
 async def get_history():
     db = SessionLocal()
     try:
         msgs = db.query(DBMessage).order_by(DBMessage.timestamp.asc()).all()
-        history = [{"sender": m.sender, "text": m.text} for m in msgs]
-        return history
-    except Exception as e:
-        print(f"DB Error: {e}")
-        return [] # Возвращаем пустой список вместо ошибки
+        return [{"sender": m.sender, "text": m.text} for m in msgs]
+    except Exception:
+        return []
     finally:
         db.close()
 
@@ -119,7 +122,6 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             msg_json = json.loads(data)
             
-            # Сохраняем в базу каждое сообщение!
             db = SessionLocal()
             new_msg = DBMessage(sender=msg_json['sender'], text=msg_json['text'])
             db.add(new_msg)
