@@ -101,10 +101,15 @@ async def login(data: dict):
 @app.get("/history")
 async def get_history():
     db = SessionLocal()
-    msgs = db.query(DBMessage).order_by(DBMessage.timestamp.asc()).all()
-    history = [{"sender": m.sender, "text": m.text} for m in msgs]
-    db.close()
-    return history
+    try:
+        msgs = db.query(DBMessage).order_by(DBMessage.timestamp.asc()).all()
+        history = [{"sender": m.sender, "text": m.text} for m in msgs]
+        return history
+    except Exception as e:
+        print(f"DB Error: {e}")
+        return [] # Возвращаем пустой список вместо ошибки
+    finally:
+        db.close()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

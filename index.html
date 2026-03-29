@@ -148,15 +148,32 @@
 
         let ws;
         async function initChat() {
-            // Подгружаем историю
-            const history = await fetch('/history').then(r => r.json());
-            history.forEach(m => render(m.text, m.sender === currentUser ? 'mine' : 'theirs', m.sender));
+            try {
+                const response = await fetch('/history');
+                const text = await response.text(); // Сначала получаем как текст
+                
+                let history = [];
+                try {
+                    history = JSON.parse(text); // Пробуем превратить в JSON
+                } catch (e) {
+                    console.warn("История пуста или сервер вернул не JSON");
+                }
 
-            ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
-            ws.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                if (data.sender !== currentUser) render(data.text, 'theirs', data.sender);
-            };
+                document.getElementById('messages').innerHTML = '';
+                if (Array.isArray(history)) {
+                    history.forEach(m => render(m.text, m.sender === currentUser ? 'mine' : 'theirs', m.sender));
+                }
+
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+                
+                ws.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    if (data.sender !== currentUser) render(data.text, 'theirs', data.sender);
+                };
+            } catch (err) {
+                console.error("Критическая ошибка инициализации:", err);
+            }
         }
 
         function render(text, type, sender) {
