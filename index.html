@@ -3,81 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Algo</title>
+    <title>Algo | notevil-net</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5968/5968756.png">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968756.png">
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#121212">
 
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #121212; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        header { background: #1f1f1f; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; border-bottom: 1px solid #333; color: #007aff; }
-        
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        
-        .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; font-size: 16px; line-height: 1.4; word-wrap: break-word; position: relative; }
-        .mine { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 4px; }
-        .theirs { align-self: flex-start; background: #2c2c2e; color: white; border-bottom-left-radius: 4px; }
-        
-        .sender { font-size: 10px; margin-bottom: 4px; opacity: 0.5; display: block; }
+        :root {
+            --bg: #0d0d0d;
+            --surface: #1a1a1a;
+            --accent: #00ff41; /* Тот самый неоновый зеленый */
+            --text: #e0e0e0;
+            --mine: #004d1a;
+        }
 
-        #input-area { background: #1f1f1f; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
-        input { flex: 1; border: none; background: #2c2c2e; color: white; border-radius: 20px; padding: 10px 15px; outline: none; font-size: 16px; }
-        button { background: #007aff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 20px; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* Экран входа */
+        #auth-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.05);
+        }
+
+        h1 { color: var(--accent); text-align: center; font-weight: 600; letter-spacing: 2px; margin-bottom: 30px; }
+
+        input {
+            width: 100%;
+            background: #262626;
+            border: 1px solid #333;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        button {
+            width: 100%;
+            background: var(--accent);
+            color: black;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .btn-secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
+
+        /* Чат */
+        header { background: var(--surface); padding: 15px; text-align: center; border-bottom: 1px solid #333; font-weight: 600; color: var(--accent); }
+        
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 12px; line-height: 1.5; font-size: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .mine { align-self: flex-end; background: var(--mine); color: white; border-bottom-right-radius: 2px; border-color: var(--accent); }
+        .theirs { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 2px; }
+        
+        .sender { font-size: 10px; color: var(--accent); opacity: 0.7; margin-bottom: 4px; display: block; font-weight: 600; }
+
+        #input-area { background: var(--surface); padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
     </style>
 </head>
 <body>
-    <header>Algo</header>
-    <div id="messages"></div>
-    <form id="input-area" onsubmit="sendMessage(event)">
-        <input type="text" id="messageText" placeholder="Сообщение..." autocomplete="off">
-        <button type="submit">↑</button>
-    </form>
+
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1>ALGO</h1>
+            <input type="text" id="userInp" placeholder="Логин">
+            <input type="password" id="passInp" placeholder="Пароль">
+            <button onclick="handleAuth('login')">ВХОД</button>
+            <button class="btn-secondary" onclick="handleAuth('register')">РЕГИСТРАЦИЯ</button>
+        </div>
+    </div>
+
+    <div id="chat-content" style="display:none; flex-direction: column; height: 100vh;">
+        <header>notevil-net // algo_core</header>
+        <div id="messages"></div>
+        <form id="input-area" onsubmit="send(event)">
+            <input type="text" id="msgInp" placeholder="Введите сообщение..." autocomplete="off">
+            <button type="submit" style="width: 50px;">↑</button>
+        </form>
+    </div>
 
     <script>
-        // Запоминаем кто зашел
-        let user = localStorage.getItem('algo_user');
-        if (!user) {
-            user = prompt("Введите ваше имя (notEvil или Оля):");
-            localStorage.setItem('algo_user', user);
+        let currentUser = localStorage.getItem('algo_user');
+
+        async function handleAuth(type) {
+            const username = document.getElementById('userInp').value;
+            const password = document.getElementById('passInp').value;
+            
+            const res = await fetch(`/${type}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password})
+            });
+
+            if (res.ok) {
+                localStorage.setItem('algo_user', username);
+                location.reload();
+            } else {
+                alert(type === 'login' ? "Ошибка входа" : "Пользователь уже существует");
+            }
         }
 
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+        if (currentUser) {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('chat-content').style.display = 'flex';
+            initChat();
+        }
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            // Если отправитель не я - рисуем сообщение
-            if (data.sender !== user) {
-                renderMsg(data.text, 'theirs', data.sender);
-            }
-        };
+        let ws;
+        async function initChat() {
+            // Подгружаем историю
+            const history = await fetch('/history').then(r => r.json());
+            history.forEach(m => render(m.text, m.sender === currentUser ? 'mine' : 'theirs', m.sender));
 
-        function renderMsg(text, type, sender = '') {
-            const container = document.getElementById('messages');
+            ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.sender !== currentUser) render(data.text, 'theirs', data.sender);
+            };
+        }
+
+        function render(text, type, sender) {
             const div = document.createElement('div');
             div.className = `message ${type}`;
-            const nameTag = sender ? `<span class="sender">${sender}</span>` : '';
-            div.innerHTML = `${nameTag}${text}`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+            div.innerHTML = `<span class="sender">${sender}</span>${text}`;
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
         }
 
-        function sendMessage(event) {
-            event.preventDefault();
-            const input = document.getElementById("messageText");
-            if (input.value.trim() !== "") {
-                const messageData = { sender: user, text: input.value };
-                ws.send(JSON.stringify(messageData));
-                
-                renderMsg(input.value, 'mine');
-                input.value = '';
+        function send(e) {
+            e.preventDefault();
+            const inp = document.getElementById('msgInp');
+            if (inp.value.trim() && ws) {
+                ws.send(JSON.stringify({sender: currentUser, text: inp.value}));
+                render(inp.value, 'mine', currentUser);
+                inp.value = '';
             }
         }
     </script>
