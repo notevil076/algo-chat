@@ -2,154 +2,117 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algo | notevil-net</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0d0d0d;
-            --surface: #1a1a1a;
-            --accent: #00ff41;
-            --text: #e0e0e0;
-            --mine: #004d1a;
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        #auth-screen {
-            position: fixed; inset: 0; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; padding: 20px;
-        }
-
-        .auth-card {
-            background: var(--surface); padding: 30px; border-radius: 12px;
-            border: 1px solid #333; width: 100%; max-width: 350px;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
-        }
-
-        h1 { color: var(--accent); text-align: center; letter-spacing: 2px; }
-
-        input {
-            width: 100%; background: #262626; border: 1px solid #333;
-            padding: 12px; margin-bottom: 15px; border-radius: 8px;
-            color: white; box-sizing: border-box; outline: none;
-        }
-
+        :root { --bg: #0d0d0d; --surface: #1a1a1a; --accent: #00ff41; --text: #e0e0e0; --mine: #004d1a; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .auth-card { background: var(--surface); padding: 30px; border-radius: 12px; border: 1px solid #333; width: 300px; text-align: center; }
+        input { width: 100%; background: #262626; border: 1px solid #333; padding: 12px; margin-bottom: 15px; border-radius: 8px; color: white; box-sizing: border-box; outline: none; }
         input:focus { border-color: var(--accent); }
-
-        button {
-            width: 100%; background: var(--accent); color: black;
-            border: none; padding: 12px; border-radius: 8px;
-            font-weight: 600; cursor: pointer;
-        }
-
-        .btn-secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
-
-        header { background: var(--surface); padding: 15px; text-align: center; border-bottom: 1px solid #333; color: var(--accent); font-weight: 600; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .message { max-width: 80%; padding: 10px 15px; border-radius: 12px; font-size: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        .mine { align-self: flex-end; background: var(--mine); border-bottom-right-radius: 2px; border-color: var(--accent); }
+        button { width: 100%; background: var(--accent); color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-sec { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-top: 10px; }
+        header { background: var(--surface); padding: 15px; text-align: center; color: var(--accent); border-bottom: 1px solid #333; font-weight: 600; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 10px; border-radius: 10px; font-size: 14px; position: relative; }
+        .mine { align-self: flex-end; background: var(--mine); border-bottom-right-radius: 2px; }
         .theirs { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 2px; }
-        .sender { font-size: 10px; color: var(--accent); opacity: 0.7; margin-bottom: 4px; display: block; }
-        #input-area { background: var(--surface); padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        .sender { font-size: 10px; color: var(--accent); display: block; margin-bottom: 4px; opacity: 0.8; }
+        form { background: var(--surface); padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
     </style>
 </head>
 <body>
-
     <div id="auth-screen">
         <div class="auth-card">
-            <h1>ALGO</h1>
-            <input type="text" id="userInp" placeholder="Логин">
-            <input type="password" id="passInp" placeholder="Пароль">
-            <button onclick="handleAuth('login')">ВХОД</button>
-            <button class="btn-secondary" onclick="handleAuth('register')">РЕГИСТРАЦИЯ</button>
+            <h1 style="color:var(--accent); letter-spacing: 3px;">ALGO</h1>
+            <input type="text" id="u" placeholder="Логин">
+            <input type="password" id="p" placeholder="Пароль">
+            <button onclick="auth('login')">ВХОД</button>
+            <button class="btn-sec" onclick="auth('register')">РЕГИСТРАЦИЯ</button>
         </div>
     </div>
 
-    <div id="chat-content" style="display:none; flex-direction: column; height: 100vh;">
+    <div id="chat" style="display:none; flex-direction: column; height: 100vh;">
         <header>notevil-net // algo_core</header>
         <div id="messages"></div>
-        <form id="input-area" onsubmit="send(event)">
-            <input type="text" id="msgInp" placeholder="Введите сообщение..." autocomplete="off">
-            <button type="submit" style="width: 60px;">↑</button>
+        <form onsubmit="send(event)">
+            <input type="text" id="m" style="flex:1" placeholder="Сообщение..." autocomplete="off">
+            <button type="submit" style="width:60px">↑</button>
         </form>
     </div>
 
     <script>
-        let currentUser = localStorage.getItem('algo_user');
-        let ws;
-
-        if (currentUser) {
+        let user = localStorage.getItem('algo_user'), ws;
+        
+        if (user) {
             document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('chat-content').style.display = 'flex';
+            document.getElementById('chat').style.display = 'flex';
             initChat();
         }
-
-        async function handleAuth(type) {
-            const username = document.getElementById('userInp').value.trim();
-            const password = document.getElementById('passInp').value.trim();
-            if (!username || !password) return alert("Заполните поля");
+        
+        async function auth(type) {
+            const username = document.getElementById('u').value.trim();
+            const password = document.getElementById('p').value.trim();
+            if(!username || !password) return alert("Введите данные");
 
             try {
-                const res = await fetch(`/${type}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username, password})
+                const res = await fetch('/' + type, { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({username, password}) 
                 });
-                const data = await res.json();
-                if (res.ok) {
-                    localStorage.setItem('algo_user', username);
-                    window.location.reload();
+                
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const data = await res.json();
+                    if (res.ok) {
+                        localStorage.setItem('algo_user', username);
+                        location.reload();
+                    } else {
+                        alert(data.detail || "Ошибка входа");
+                    }
                 } else {
-                    alert(data.detail || "Ошибка");
+                    alert("Сервер перегружен или недоступен (502)");
                 }
-            } catch (e) { alert("Сервер недоступен"); }
+            } catch (e) { alert("Ошибка соединения с сервером"); }
         }
 
         async function initChat() {
             try {
                 const res = await fetch('/history');
                 const history = await res.json();
-                const container = document.getElementById('messages');
-                container.innerHTML = '';
                 if (Array.isArray(history)) {
-                    history.forEach(m => render(m.text, m.sender === currentUser ? 'mine' : 'theirs', m.sender));
+                    history.forEach(msg => render(msg.text, msg.sender === user ? 'mine' : 'theirs', msg.sender));
                 }
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+                
+                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                ws = new WebSocket(protocol + '//' + location.host + '/ws');
                 ws.onmessage = (e) => {
-                    const data = JSON.parse(e.data);
-                    if (data.sender !== currentUser) render(data.text, 'theirs', data.sender);
+                    const d = JSON.parse(e.data);
+                    if (d.sender !== user) render(d.text, 'theirs', d.sender);
                 };
-            } catch (e) { console.error("Init error", e); }
+            } catch (e) { console.log("Chat init error"); }
         }
 
-        function render(text, type, sender) {
-            const div = document.createElement('div');
-            div.className = `message ${type}`;
-            div.innerHTML = `<span class="sender">${sender}</span>${text}`;
-            const container = document.getElementById('messages');
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+        function render(txt, cls, snd) {
+            const d = document.createElement('div');
+            d.className = 'msg ' + cls;
+            d.innerHTML = `<span class="sender">${snd}</span>${txt}`;
+            const box = document.getElementById('messages');
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
         }
 
         function send(e) {
             e.preventDefault();
-            const inp = document.getElementById('msgInp');
-            if (inp.value.trim() && ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({sender: currentUser, text: inp.value}));
-                render(inp.value, 'mine', currentUser);
-                inp.value = '';
+            const i = document.getElementById('m');
+            if (i.value.trim() && ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({sender: user, text: i.value}));
+                render(i.value, 'mine', user);
+                i.value = '';
             }
         }
     </script>
