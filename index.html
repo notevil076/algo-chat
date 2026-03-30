@@ -184,15 +184,14 @@
         }
 
         function send(e) {
-            e.preventDefault();
-            const i = document.getElementById('m');
-            if (i.value.trim() && ws && currentRecipient) {
-                const msg = {sender: me, recipient: currentRecipient, text: i.value};
-                ws.send(JSON.stringify(msg));
-                render(i.value, 'mine');
-                i.value = '';
-            }
-        }
+        e.preventDefault();
+        const text = document.getElementById('m').value;
+        const msg = { sender: me, recipient: currentRecipient, text: text };
+        console.log("Sending message:", msg); // Увидишь, правильный ли recipient
+        ws.send(JSON.stringify(msg));
+        document.getElementById('m').value = '';
+        }       
+
     </script>
 </body>
 </html>

@@ -47,12 +47,12 @@ class ConnectionManager:
         if username in self.active_connections:
             del self.active_connections[username]
 
-    async def send_personal_message(self, message: dict, recipient: str):
-        if recipient in self.active_connections:
-            try:
-                await self.active_connections[recipient].send_text(json.dumps(message))
-            except:
-                self.disconnect(recipient)
+async def send_personal_message(self, message: dict, username: str):
+    if username in self.active_connections:
+        websocket = self.active_connections[username]
+        await websocket.send_json(message)
+    else:
+        print(f"User {username} is not online")
 
 manager = ConnectionManager()
 
@@ -117,10 +117,11 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             db.commit()
             db.close()
             
-            # Отправляем получателю
-            await manager.send_personal_message(msg_json, msg_json['recipient'])
-            # Отправляем копию СЕБЕ (отправителю), чтобы сообщения синхронизировались на всех устройствах
-            await manager.send_personal_message(msg_json, username) 
+# Отправляем получателю
+await manager.send_personal_message(msg_json, msg_json['recipient'])
+# Отправляем копию СЕБЕ, чтобы сообщение появилось в твоем окне на всех устройствах
+await manager.send_personal_message(msg_json, username)  
+
     except WebSocketDisconnect:
         manager.disconnect(username)
     except Exception as e:
