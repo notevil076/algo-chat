@@ -33,8 +33,6 @@ class UserAuth(BaseModel):
     username: str
     password: str
 
-app = FastAPI()
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[str, WebSocket] = {}
@@ -47,14 +45,13 @@ class ConnectionManager:
         if username in self.active_connections:
             del self.active_connections[username]
 
-async def send_personal_message(self, message: dict, username: str):
-    if username in self.active_connections:
-        websocket = self.active_connections[username]
-        await websocket.send_json(message)
-    else:
-        print(f"User {username} is not online")
+    async def send_personal_message(self, message: dict, username: str):
+        if username in self.active_connections:
+            websocket = self.active_connections[username]
+            await websocket.send_json(message)
 
 manager = ConnectionManager()
+app = FastAPI()
 
 @app.post("/register")
 async def register(user: UserAuth):
@@ -96,10 +93,11 @@ async def get_history(me: str, other: str):
 
 @app.get("/")
 async def get_index():
-    return FileResponse("index.html") # Файл должен быть в той же папке, что и main.py
+    return FileResponse("index.html")
 
 @app.get("/manifest.json")
-async def get_manifest(): return FileResponse("manifest.json")
+async def get_manifest():
+    return FileResponse("manifest.json")
 
 @app.websocket("/ws/{username}")
 async def websocket_endpoint(websocket: WebSocket, username: str):
@@ -108,20 +106,19 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
         while True:
             data = await websocket.receive_text()
             msg_json = json.loads(data)
-            
-            # ВАЖНО: Принудительно ставим отправителя из URL сокета, 
-            # чтобы никто не мог подделать имя в JSON
             msg_json['sender'] = username 
             
+            # Сохранение в БД
             db = SessionLocal()
-            db.add(DBMessage(sender=msg_json['sender'], recipient=msg_json['recipient'], text=msg_json['text']))
-            db.commit()
-            db.close()
+            try:
+                db.add(DBMessage(sender=msg_json['sender'], recipient=msg_json['recipient'], text=msg_json['text']))
+                db.commit()
+            finally:
+                db.close()
             
-# Отправляем получателю
-await manager.send_personal_message(msg_json, msg_json['recipient'])
-# Отправляем копию СЕБЕ, чтобы сообщение появилось в твоем окне на всех устройствах
-await manager.send_personal_message(msg_json, username)  
+            # Отправка обоим участникам
+            await manager.send_personal_message(msg_json, msg_json['recipient'])
+            await manager.send_personal_message(msg_json, username)  
 
     except WebSocketDisconnect:
         manager.disconnect(username)
