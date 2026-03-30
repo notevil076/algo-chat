@@ -121,19 +121,16 @@
         }
 
         function initWS() {
-            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${location.host}/ws/${me}`);
-            ws.onmessage = (e) => {
-                const d = JSON.parse(e.data);
-                if (!activeChats.includes(d.sender)) {
-                    activeChats.push(d.sender);
-                    saveChats();
-                    renderChatList();
-                }
-                if (currentRecipient === d.sender) render(d.text, 'theirs');
-                else new Notification(`//${d.sender}`, { body: d.text });
-            };
-        }
+    // Эта строка сама поймет, использовать ws: или wss:
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${location.host}/ws/${me}`);
+    
+    ws.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        console.log("Получено сообщение:", d);
+        // ... твоя логика рендера
+    };
+}
 
         async function handleSearch(e) {
             if (e.key === 'Enter') {
