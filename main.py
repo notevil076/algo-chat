@@ -121,7 +121,8 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
             await manager.send_personal_message(msg_json, msg_json['recipient'])
             # Отправляем копию СЕБЕ (отправителю), чтобы сообщения синхронизировались на всех устройствах
             await manager.send_personal_message(msg_json, username) 
-    except:
+    except WebSocketDisconnect:
         manager.disconnect(username)
-    except:
-        pass
+    except Exception as e:
+        print(f"Error: {e}")
+        manager.disconnect(username)
