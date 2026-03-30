@@ -95,7 +95,8 @@ async def get_history(me: str, other: str):
     return [{"sender": m.sender, "text": m.text} for m in msgs]
 
 @app.get("/")
-async def get_index(): return FileResponse("index.html")
+async def get_index():
+    return FileResponse("index.html") # Файл должен быть в той же папке, что и main.py
 
 @app.get("/manifest.json")
 async def get_manifest(): return FileResponse("manifest.json")
