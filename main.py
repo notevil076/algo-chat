@@ -107,12 +107,21 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
         while True:
             data = await websocket.receive_text()
             msg_json = json.loads(data)
+            
+            # ВАЖНО: Принудительно ставим отправителя из URL сокета, 
+            # чтобы никто не мог подделать имя в JSON
+            msg_json['sender'] = username 
+            
             db = SessionLocal()
             db.add(DBMessage(sender=msg_json['sender'], recipient=msg_json['recipient'], text=msg_json['text']))
             db.commit()
             db.close()
+            
+            # Отправляем получателю
             await manager.send_personal_message(msg_json, msg_json['recipient'])
-    except WebSocketDisconnect:
+            # Отправляем копию СЕБЕ (отправителю), чтобы сообщения синхронизировались на всех устройствах
+            await manager.send_personal_message(msg_json, username) 
+    except:
         manager.disconnect(username)
     except:
         pass

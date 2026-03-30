@@ -80,6 +80,22 @@
     </div>
 
     <script>
+        // Жёсткая проверка авторизации при загрузке
+    (function() {
+    const user = localStorage.getItem('algo_user');
+    // Если юзер пустой, равен строке "null" или "undefined" — чистим всё и стопаем
+    if (!user || user === "null" || user === "undefined" || user === "") {
+        localStorage.clear(); 
+        console.log("Auth failed, showing login screen...");
+    } else {
+        console.log("Logged in as: " + user);
+        // Скрываем экран логина, если юзер реально есть
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('auth-screen').style.display = 'none';
+        });
+    }
+        })();
+
         let me = localStorage.getItem('algo_user'), ws, currentRecipient = null;
         let activeChats = JSON.parse(localStorage.getItem('chats_' + me) || "[]");
 
